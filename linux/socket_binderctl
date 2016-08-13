@@ -1,0 +1,87 @@
+#!/bin/sh
+# LSB compatible service control script; see http://www.linuxbase.org/spec/
+#
+# chkconfig: 345 90 10
+### BEGIN INIT INFO
+# Provides:          socket_provider
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     3 5
+# Default-Stop:      0 1 2 6
+# Short-Description: Socket provider
+# Description:       Provides privileged TCP/IP ports to non-privileged processes
+### END INIT INFO
+
+function launch_sockprov()
+{
+	SOCKCMD="$1"
+	$SHELL -c "echo \$\$ ; exec ${SOCKCMD}"
+}
+
+COMMAND=$1
+
+# Check for missing binaries (stale symlinks should not happen)
+if [ -z "$SOCKPROV_BIN" ]; then
+  SOCKPROV_BIN=/usr/sbin/socket_binder
+fi
+test -x ${SOCKPROV_BIN} || exit 5
+
+SOCKPROV_PIDFILE=/var/run/socket_binder
+
+# Ensure that if the socket_provider pid file exist and is not empty, it is really running
+if [ -s "${SOCKPROV_PIDFILE}" ] && ! ( kill -n 0 ` cat ${SOCKPROV_PIDFILE} ` 2>/dev/null ); then
+  rm ${SOCKPROV_PIDFILE}
+fi
+
+start() {
+        echo -n "Starting socket binder: "
+	PID=`"$SOCKPROV_BIN" -p /var/run/socket_binder.socket 660 root.sockbind`
+	if [ -z "$PID" ]; then
+		echo " FAILED"
+		exit 1
+	fi
+	echo $PID > $SOCKPROV_PIDFILE
+	echo " OK"
+	exit 0
+}
+
+stop() {
+	[ -s "${SOCKPROV_PIDFILE}" ] || return 0
+        echo -n "Stopping socket binder: "
+	kill -TERM `cat ${SOCKPROV_PIDFILE}`
+	rm ${SOCKPROV_PIDFILE}
+	echo "OK"
+}
+
+case "$COMMAND" in
+    start)
+        start
+        exit $RETVAL
+        ;;
+    stop)
+        stop
+        exit 0
+        ;;
+    restart)
+        stop
+        start
+        exit 0
+        ;;
+
+    force-reload)
+        stop
+        start
+        exit 0
+        ;;
+
+    status)
+        [ -s "${SOCKPROV_PIDFILE}" ] && echo "Socket binder is running" && exit 0
+        echo "Socket binder is not running"
+        exit 4
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|status|restart|force-reload}"
+        exit 1
+        ;;
+esac

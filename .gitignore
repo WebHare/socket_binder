@@ -1,0 +1,4 @@
+*.rpm
+*.dSYM
+socket_binder
+socket_user
