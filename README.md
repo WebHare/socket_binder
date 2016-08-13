@@ -9,7 +9,7 @@ audited, and allows processes which require low numbered ports (such as webserve
 even at startup.
 
 To control access to the socket_binder, set up proper privileges on the unix socket it creates. The linux RPM will set up
-a group 'sockbind', and any user which is a member of this group may use socket_binder to bind to any port < 1024
+a group 'sockbind', and any user which is a member of this group may use socket_binder to bind to any port below 1024
 
 ## Advantages
 The socket_binder solution to binding below port 1024 has the following advantages:
@@ -62,6 +62,8 @@ telnet 127.0.0.1 888
 ## Using the socket_binder from a server application
 - Copy connect_to_unix_socket and send_the_socket from socket_user.c to your application
 
+(yes, their names could be better)
+
 - Do something like this, but add error checking
 
 ```
@@ -71,7 +73,7 @@ int unixfd = connect_to_unix_socket('/path/to/socket_binder/socket');
 // Create the listening socket
 int listenfd = socket(atol(argv[2]) == 6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0);
 
-// Bind to IPv4 port 80 on 127.0.0.1
+// Bind to IPv4 port 80 on 127.0.0.1 - this basically replaced accept+listen
 send_the_socket(listenfd, unixfd, 4, "127.0.0.1", 80);
 
 // Listen
@@ -101,7 +103,7 @@ rpm -i /socket_binder/socket_binder-1.0.1-1.x86_64.rpm
 
 and verify it's all up & running
 
-## Installing on Darwin
+## Installing on OS/X (Darwin)
 
 ```
 make
